@@ -73,7 +73,7 @@
         <!-- android:value="ChipHellForum" /> -->
         <meta-data
             android:name="UMENG_CHANNEL"
-            android:value="Baidu" />
+            android:value="Test" />
         <!-- <meta-data -->
         <!-- android:name="UMENG_CHANNEL" -->
         <!-- android:value="GooglePlay" /> -->
