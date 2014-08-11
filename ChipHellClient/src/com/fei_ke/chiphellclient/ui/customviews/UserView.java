@@ -1,4 +1,3 @@
-
 package com.fei_ke.chiphellclient.ui.customviews;
 
 import android.content.Context;
@@ -16,7 +15,7 @@ import org.androidannotations.annotations.ViewById;
 
 /**
  * 用户视图
- * 
+ *
  * @author fei-ke
  * @2014-6-16
  */
@@ -24,13 +23,19 @@ import org.androidannotations.annotations.ViewById;
 public class UserView extends FrameLayout {
 
     @ViewById(R.id.imageView_avatar)
-    ImageView imageViewAvatar;
+    protected ImageView imageViewAvatar;
 
     @ViewById(R.id.textView_name)
-    TextView textViewName;
+    protected TextView textViewName;
 
     @ViewById(R.id.textView_info)
-    TextView textViewInfo;
+    protected TextView textViewInfo;
+
+    @ViewById(R.id.button_favorite)
+    protected TextView buttonFavorite;
+
+    @ViewById(R.id.button_my_post)
+    protected TextView buttonMyPost;
 
     public static UserView newInstance(Context context) {
         return UserView_.build(context);
@@ -46,4 +51,11 @@ public class UserView extends FrameLayout {
         textViewInfo.setText(Html.fromHtml(user.getInfo()));
     }
 
+    public TextView getButtonFavorite() {
+        return buttonFavorite;
+    }
+
+    public TextView getButtonMyPost() {
+        return buttonMyPost;
+    }
 }

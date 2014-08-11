@@ -1,11 +1,11 @@
-
 package com.fei_ke.chiphellclient.api;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.webkit.CookieManager;
 
+import com.fei_ke.chiphellclient.ChhApplication;
 import com.fei_ke.chiphellclient.bean.AlbumWrap;
-import com.fei_ke.chiphellclient.bean.Plate;
 import com.fei_ke.chiphellclient.bean.PlateGroup;
 import com.fei_ke.chiphellclient.bean.Post;
 import com.fei_ke.chiphellclient.bean.PrepareQuoteReply;
@@ -16,11 +16,8 @@ import com.fei_ke.chiphellclient.constant.Constants;
 import com.fei_ke.chiphellclient.constant.Mode;
 import com.fei_ke.chiphellclient.utils.LogMessage;
 import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.PersistentCookieStore;
 import com.loopj.android.http.RequestParams;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
 import java.util.List;
 
@@ -75,17 +72,20 @@ public class ChhApi {
     /**
      * 获取帖子列表
      *
-     * @param plate 版块
-     * @param page 页码
+     * @param url         版块链接
+     * @param page        页码
      * @param apiCallBack
      */
-    public void getThreadList(Context context, Plate plate, int page, ApiCallBack<ThreadListWrap> apiCallBack) {
+    public void getThreadList(Context context, String url, final int page, String orderBy, ApiCallBack<ThreadListWrap> apiCallBack) {
         RequestParams param = new RequestParams("page", page);
-        getAsyncHttpClient().get(context, plate.getUrl(), param, page == 1, new ApiResponsHandler<ThreadListWrap>(apiCallBack) {
+        if (!TextUtils.isEmpty(orderBy)) {
+            param.add("orderby", orderBy);
+        }
+        getAsyncHttpClient().get(context, url, param, page == 1, new ApiResponsHandler<ThreadListWrap>(apiCallBack) {
 
             @Override
             public ThreadListWrap parseResponse(String responseString) {
-                ThreadListWrap threadListWrap = HtmlParse.parseThreadList(responseString);
+                ThreadListWrap threadListWrap = HtmlParse.parseThreadList(responseString, page == 1);
                 return threadListWrap;
             }
 
@@ -95,8 +95,8 @@ public class ChhApi {
     /**
      * 获取回复列表
      *
-     * @param thread 帖子
-     * @param page 页码
+     * @param thread      帖子
+     * @param page        页码
      * @param apiCallBack
      */
     public void getPostList(Context context, Thread thread, int page, ApiCallBack<List<Post>> apiCallBack) {
@@ -107,8 +107,7 @@ public class ChhApi {
             @Override
             public List<Post> parseResponse(String responseString) {
                 LogMessage.i(TAG + "#getPostList", responseString);
-                List<Post> posts = HtmlParse.parsePostList(responseString);
-                return posts;
+                return HtmlParse.parsePostList(responseString);
             }
 
         });
@@ -134,17 +133,13 @@ public class ChhApi {
 
             @Override
             public List<Post> parseResponse(String responseString) {
-                LogMessage.i(TAG + "#reply", responseString);
-                String message = "发送成功";
-                Document document = Jsoup.parse(responseString);
-                Element messagetext = document.getElementById("messagetext");
+                LogMessage.i(TAG + "#quotrReply", responseString);
+                String messagetext = HtmlParse.parseMessageText(responseString);
                 if (messagetext != null) {
-                    message = messagetext.child(0).text();
-                    sendFailureMessage(0, null, message.getBytes(), new Throwable(message));
-                } else {
-                    return HtmlParse.parsePostList(responseString);
+                    sendFailureMessage(0, null, messagetext.getBytes(), new Throwable(messagetext));
+                    return null;
                 }
-                return null;
+                return HtmlParse.parsePostList(responseString);
             }
         });
     }
@@ -171,16 +166,12 @@ public class ChhApi {
             @Override
             public List<Post> parseResponse(String responseString) {
                 LogMessage.i(TAG + "#quotrReply", responseString);
-                String message = "发送成功";
-                Document document = Jsoup.parse(responseString);
-                Element messagetext = document.getElementById("messagetext");
+                String messagetext = HtmlParse.parseMessageText(responseString);
                 if (messagetext != null) {
-                    message = messagetext.child(0).text();
-                    sendFailureMessage(0, null, message.getBytes(), new Throwable(message));
-                } else {
-                    return HtmlParse.parsePostList(responseString);
+                    sendFailureMessage(0, null, messagetext.getBytes(), new Throwable(messagetext));
+                    return null;
                 }
-                return null;
+                return HtmlParse.parsePostList(responseString);
             }
         });
     }
@@ -196,12 +187,17 @@ public class ChhApi {
 
             @Override
             public PrepareQuoteReply parseResponse(String responseString) {
-                PrepareQuoteReply prepareQuoteReply = HtmlParse.parsePrepareQuoteReply(responseString);
-                return prepareQuoteReply;
+                return HtmlParse.parsePrepareQuoteReply(responseString);
             }
         });
     }
 
+    /**
+     * 获取图片列表
+     *
+     * @param url
+     * @param apiCallBack
+     */
     public void getAlbum(String url, ApiCallBack<AlbumWrap> apiCallBack) {
         getAsyncHttpClient().get(url, new ApiResponsHandler<AlbumWrap>(apiCallBack) {
 
@@ -215,11 +211,65 @@ public class ChhApi {
 
     }
 
+    /**
+     * 收藏版块
+     *
+     * @param id
+     * @param formhash
+     * @param apiCallBack
+     */
+    public static final int TYPE_FORUM = 0;
+    public static final int TYPE_THREAD = 1;
+
+    public void favorite(String id, int type, String formhash, ApiCallBack<String> apiCallBack) {
+        String url = Constants.BASE_URL + "home.php";
+        RequestParams params = new RequestParams();
+        params.add("mod", "spacecp");
+        params.add("ac", "favorite");
+        if (type == TYPE_FORUM) {
+            params.add("type", "forum");
+        } else if (type == TYPE_THREAD) {
+            params.add("type", "thread");
+        }
+        params.add("id", id);
+        params.add("formhash", formhash);
+        params.add("mobile", "yes");
+        getAsyncHttpClient().post(url, params, new ApiResponsHandler<String>(apiCallBack) {
+
+            @Override
+            public String parseResponse(String responseString) {
+                return HtmlParse.parseMessageText(responseString);
+            }
+        });
+    }
+
+    public void deleteFavorite(String favid, String formhash, ApiCallBack<String> apiCallBack) {
+        String url = Constants.BASE_URL + "home.php";
+        RequestParams params = new RequestParams();
+        params.add("mod", "spacecp");
+        params.add("ac", "favorite");
+        params.add("op", "delete");
+        params.add("favid", favid);
+        params.add("type", "forum");
+        params.add("formhash", formhash);
+        params.add("mobile", "yes");
+        params.add("deletesubmit", "true");
+        getAsyncHttpClient().post(url, params, new ApiResponsHandler<String>(apiCallBack) {
+
+            @Override
+            public String parseResponse(String responseString) {
+                return HtmlParse.parseMessageText(responseString);
+            }
+        });
+    }
+
     private AsyncHttpClient getAsyncHttpClient() {
         if (mAsyncHttpClient == null) {
             mAsyncHttpClient = new AsyncHttpClient();
             mAsyncHttpClient.setTimeout(30 * 1000);
             mAsyncHttpClient.addHeader("Cookie", CookieManager.getInstance().getCookie(Constants.BASE_URL));
+            mAsyncHttpClient.setCookieStore(new PersistentCookieStore(ChhApplication.getInstance()));
+            mAsyncHttpClient.addHeader("Content-Type", "application/x-www-form-urlencoded");
         }
         return mAsyncHttpClient;
     }

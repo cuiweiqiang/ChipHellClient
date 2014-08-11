@@ -1,4 +1,1 @@
-ChipHellClient
-==============
-
-ChipHell非官方客户端
+#ChipHellClient

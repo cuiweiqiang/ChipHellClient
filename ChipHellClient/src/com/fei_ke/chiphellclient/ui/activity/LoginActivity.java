@@ -1,4 +1,3 @@
-
 package com.fei_ke.chiphellclient.ui.activity;
 
 import android.annotation.SuppressLint;
@@ -17,7 +16,7 @@ import org.androidannotations.annotations.ViewById;
 
 /**
  * 登录页面
- * 
+ *
  * @author fei-ke
  * @2014-6-15
  */
