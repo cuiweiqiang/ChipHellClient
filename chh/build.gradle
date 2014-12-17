@@ -1,0 +1,90 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.4+'
+    }
+}
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+apply plugin: 'com.android.application'
+apply plugin: 'android-apt'
+apt {
+    arguments {
+        androidManifestFile variant.outputs[0].processResources.manifestFile
+        resourcePackageName "com.fei_ke.chiphellclient"
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: '*.jar')
+    compile 'com.nostra13.universalimageloader:universal-image-loader:1.9.+'
+    compile 'com.readystatesoftware.systembartint:systembartint:1.0.4'
+    compile 'pl.droidsonroids.gif:android-gif-drawable:1.1.+'
+    compile 'org.androidannotations:androidannotations:3.2'
+    compile 'com.android.support:support-v4:21.0.+'
+    compile 'com.sothree.slidinguppanel:library:+'
+    compile 'com.diegocarloslima:fgelv:0.1.+@aar'
+    compile 'de.greenrobot:eventbus:2.4.0'
+    compile 'org.jsoup:jsoup:1.8.1'
+
+    apt "org.androidannotations:androidannotations:3.2"
+    compile project(':libraries:ActionBarPullToRefresh')
+    compile project(':libraries:AsyncHttpClient')
+    compile project(':libraries:QuickReturn')
+    compile project(':libraries:SwipeBack')
+    compile project(':libraries:Umeng')
+}
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion '21.1.1'
+
+
+    defaultConfig {
+        versionCode 10
+        versionName "1.2.3"
+        minSdkVersion 14
+        targetSdkVersion 21
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src', 'src']
+            resources.srcDirs = ['src', 'src']
+            aidl.srcDirs = ['src', 'src']
+            renderscript.srcDirs = ['src', 'src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+        }
+
+        // Move the tests to tests/java, tests/res, etc...
+        instrumentTest.setRoot('tests')
+
+        // Move the build types to build-types/<type>
+        // For instance, build-types/debug/java, build-types/debug/AndroidManifest.xml, ...
+        // This moves them out of them default location under src/<type>/... which would
+        // conflict with src/ being used by the main source set.
+        // Adding new build types or product flavors should be accompanied
+        // by a similar customization.
+        debug.setRoot('build-types/debug')
+        release.setRoot('build-types/release')
+        buildTypes {
+            release {
+                minifyEnabled true
+                proguardFile 'proguard-project.txt'
+            }
+            debug {
+
+            }
+        }
+    }
+    lintOptions {
+//        abortOnError false
+    }
+}
