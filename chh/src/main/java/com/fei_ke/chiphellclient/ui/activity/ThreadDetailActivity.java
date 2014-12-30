@@ -41,6 +41,7 @@ import com.fei_ke.chiphellclient.ui.fragment.FastReplyFragment.OnReplySuccess;
 import com.fei_ke.chiphellclient.ui.fragment.PostListFragment;
 import com.fei_ke.chiphellclient.utils.ThreadStatusUtil;
 import com.fei_ke.chiphellclient.utils.ToastUtil;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.Extra;
@@ -190,9 +191,16 @@ public class ThreadDetailActivity extends BaseActivity {
         getPostList();
     }
 
+    private float mSlideOffset;
 
     private void hookPanelTouchEvent() {
         final ViewConfiguration vc = ViewConfiguration.get(this);
+        mPanelLayout.setPanelSlideListener(new SlidingUpPanelLayout.SimplePanelSlideListener() {
+            @Override
+            public void onPanelSlide(View view, float slideOffset) {
+                mSlideOffset = slideOffset;
+            }
+        });
         mPanelLayout.setHookDispatchTouchEvent(new MySlidingUpPanelLayout.HookDispatchTouchEvent() {
             float offsetY;
             float lastPosY = -1;
@@ -204,9 +212,11 @@ public class ThreadDetailActivity extends BaseActivity {
             boolean forwarding;
             boolean hasCalcOffset;
 
+            boolean isPanelExpandedBeforForwarding;
+
             @Override
             public boolean dispatchTouchEvent(MotionEvent event) {
-                int action = event.getAction();
+                int action = event.getActionMasked();
                 curPosY = event.getY();
 
                 if (action == MotionEvent.ACTION_DOWN) {
@@ -244,15 +254,25 @@ public class ThreadDetailActivity extends BaseActivity {
                     mPanelLayout.callSuperDispatchTouchEvent(event);
                     event.setAction(MotionEvent.ACTION_DOWN);
                     forwarding = true;
+
+                    isPanelExpandedBeforForwarding = isPanelExpanded;
                 }
 
 
-                if (forwarding) {//设置偏移
-                    event.offsetLocation(0, offsetY + dragView.getHeight() / 2);
-                    event.setLocation(dragView.getWidth() / 2, event.getY());
+                if (forwarding) {//设置偏移 定位到draView的中央位置
+                    event.offsetLocation(-event.getX() + dragView.getLeft() + dragView.getWidth() / 2,
+                            offsetY + dragView.getHeight() / 2);
                 }
 
                 if (action == MotionEvent.ACTION_UP) {
+                    if (forwarding) {
+                        if (isPanelExpandedBeforForwarding && mSlideOffset <= 0.9f) {
+                            mPanelLayout.collapsePanel();
+                        }
+                        if (!isPanelExpandedBeforForwarding && mSlideOffset >= 0.1f) {
+                            mPanelLayout.expandPanel();
+                        }
+                    }
                     forwarding = false;
                     hasCalcOffset = false;
                     needForward = false;
@@ -261,6 +281,7 @@ public class ThreadDetailActivity extends BaseActivity {
                     lastPosX = -1;
                 }
 //                LogMessage.i("HookDispatchTouchEvent", this);
+
                 return false;
             }
 
